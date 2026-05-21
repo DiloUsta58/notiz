@@ -44,7 +44,13 @@ Das Verzeichnis `android/` enthält eine native Android-WebView-App, die die Web
 
 ```powershell
 .\tools\sync-web-assets.ps1
-.\tools\build-apk.ps1 -Variant Debug
+.\tools\build-apk-signed.ps1 -Variant Debug
 ```
 
-Das erzeugte Debug-APK wird zusätzlich nach `Notiz-debug.apk` im Projektordner kopiert.
+Das erzeugte Debug-APK wird zusätzlich nach `Notiz-debug-signed.apk` im Projektordner kopiert.
+
+Release (signiert):
+
+```powershell
+.\tools\build-apk-signed.ps1 -Variant Release
+```

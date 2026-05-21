@@ -29,13 +29,26 @@
 
         <div class="actions">
           <button class="iconbtn" id="backupBtn" title="Backups" aria-label="Backups">
-            <span aria-hidden="true">⟲</span>
+            <svg class="iconbtn__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 12a8 8 0 0 1-13.657 5.657" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M4 12a8 8 0 0 1 13.657-5.657" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M6 19v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 5v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </button>
           <button class="iconbtn" id="exportBtn" title="Export" aria-label="Export">
-            <span aria-hidden="true">⭳</span>
+            <svg class="iconbtn__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M8 11l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
           </button>
           <label class="iconbtn filebtn" for="importFile" title="Import" aria-label="Import">
-            <span aria-hidden="true">⭱</span>
+            <svg class="iconbtn__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21V11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M8 13l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 3h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
           </label>
           <input id="importFile" class="filebtn__input" type="file" accept="application/json" />
           <button class="iconbtn" id="newBtn" title="Neue Notiz" aria-label="Neue Notiz">
