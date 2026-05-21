@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Notiz" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Notiz — Minimal Notes</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon/notes.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icon/notes32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon/notes192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icon/notes180.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="topbar" role="banner">
+        <div class="brand">
+          <div class="brand__dot" aria-hidden="true"></div>
+          <div class="brand__text">
+            <div class="brand__name">Notiz</div>
+            <div class="brand__sub">minimal</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="iconbtn" id="backupBtn" title="Backups" aria-label="Backups">
+            <span aria-hidden="true">⟲</span>
+          </button>
+          <button class="iconbtn" id="exportBtn" title="Export" aria-label="Export">
+            <span aria-hidden="true">⭳</span>
+          </button>
+          <label class="iconbtn filebtn" for="importFile" title="Import" aria-label="Import">
+            <span aria-hidden="true">⭱</span>
+          </label>
+          <input id="importFile" class="filebtn__input" type="file" accept="application/json" />
+          <button class="iconbtn" id="newBtn" title="Neue Notiz" aria-label="Neue Notiz">
+            <span aria-hidden="true">＋</span>
+          </button>
+          <button class="iconbtn" id="themeBtn" title="Theme umschalten" aria-label="Theme umschalten">
+            <span aria-hidden="true">◐</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="shell shell--single" role="main">
+        <section class="pane pane--list pane--full" aria-label="Notizenliste">
+          <div class="search">
+            <input id="searchInput" class="search__input" type="search" placeholder="Suchen…" autocomplete="off" />
+            <div class="search__meta" id="searchMeta" aria-live="polite"></div>
+          </div>
+
+          <div class="list" id="list" role="list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

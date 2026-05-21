@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Notiz" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Notiz — Bearbeiten</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon/notes.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icon/notes32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon/notes192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icon/notes180.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="topbar" role="banner">
+        <div class="brand">
+          <a class="back" href="./index.html" aria-label="Zurück zur Übersicht">←</a>
+          <div class="brand__text">
+            <div class="brand__name">Bearbeiten</div>
+            <div class="brand__sub" id="subtitle">…</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="iconbtn" id="themeBtn" title="Theme umschalten" aria-label="Theme umschalten">
+            <span aria-hidden="true">◐</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="shell shell--single" role="main">
+        <section class="pane pane--detail pane--full" aria-label="Notiz bearbeiten">
+          <div class="detail" id="detail">
+            <div class="detail__bar">
+              <div class="status" id="statusText" aria-live="polite"></div>
+              <div class="detail__barActions">
+                <button class="btn btn--danger" id="deleteBtn" type="button">Löschen</button>
+              </div>
+            </div>
+
+            <div class="editor">
+              <input id="titleInput" class="editor__title" type="text" placeholder="Titel" autocomplete="off" />
+              <div class="subbar" aria-label="Meta">
+                <label class="toollabel" title="Kategorie">
+                  <span class="toollabel__text">Cat</span>
+                  <input id="categoryInput" class="tooltext" type="text" placeholder="Kategorie" aria-label="Kategorie" />
+                </label>
+                <label class="toollabel subbar__grow" title="Tags (Komma-getrennt)">
+                  <span class="toollabel__text">Tags</span>
+                  <input id="tagsInput" class="tooltext" type="text" placeholder="z.B. einkauf, arbeit" aria-label="Tags" />
+                </label>
+              </div>
+              <div class="toolbar" role="toolbar" aria-label="Textwerkzeuge">
+                <div class="toolbar__group" aria-label="Basis">
+                  <button class="toolbtn" type="button" data-cmd="bold" title="Fett"><span aria-hidden="true">B</span></button>
+                  <button class="toolbtn" type="button" data-cmd="italic" title="Kursiv"><span aria-hidden="true">I</span></button>
+                  <button class="toolbtn" type="button" data-cmd="underline" title="Unterstreichen"><span aria-hidden="true">U</span></button>
+                  <span class="toolsep" aria-hidden="true"></span>
+                  <button class="toolbtn" type="button" data-cmd="insertOrderedList" title="Nummerierung">1.</button>
+				  <button class="toolbtn" type="button" data-cmd="insertUnorderedList" title="Aufzählung">•</button>
+                  <button class="toolbtn" type="button" data-cmd="outdent" title="Ebene hoch">←</button>
+                  <button class="toolbtn" type="button" data-cmd="indent" title="Ebene runter">→</button>
+                  <button class="toolbtn" type="button" data-action="checklist" title="Checkliste">☑</button>
+                  <span class="toolsep" aria-hidden="true"></span>
+                  <button class="toolbtn" type="button" data-cmd="justifyLeft" title="Links">⟸</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyCenter" title="Zentriert">≡</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyRight" title="Rechts">⟹</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyFull" title="Blocksatz">▦</button>
+                </div>
+
+                <div class="toolbar__group toolbar__group--right" aria-label="Stil">
+                  <label class="toollabel" title="Format">
+                    <span class="toollabel__text">Fmt</span>
+                    <select class="toolselect" id="blockSelect" aria-label="Format">
+                      <option value="p">Normal</option>
+                      <option value="h1">Überschrift 1</option>
+                      <option value="h2">Überschrift 2</option>
+                      <option value="pre">Code</option>
+                    </select>
+                  </label>
+
+                  <label class="toollabel" title="Textgröße">
+                    <span class="toollabel__text">Size</span>
+                    <select class="toolselect" id="sizeSelect" aria-label="Textgröße">
+                      <option value="12px">12</option>
+                      <option value="14px" selected>14</option>
+                      <option value="16px">16</option>
+                      <option value="18px">18</option>
+                      <option value="22px">22</option>
+                    </select>
+                  </label>
+
+                  <label class="toollabel" title="Schriftart">
+                    <span class="toollabel__text">Font</span>
+                    <select class="toolselect" id="fontSelect" aria-label="Schriftart">
+                      <option value="system-ui">System</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="Times New Roman">Times</option>
+                      <option value="Courier New">Courier</option>
+                    </select>
+                  </label>
+
+                  <label class="toollabel" title="Schriftfarbe">
+                    <span class="toollabel__text">Text</span>
+                    <input id="textColor" class="toolcolor" type="color" value="#e7edf7" aria-label="Schriftfarbe" />
+                  </label>
+
+                  <label class="toollabel" title="Texthervorhebung">
+                    <span class="toollabel__text">Mark</span>
+                    <input id="highlightColor" class="toolcolor" type="color" value="#fde68a" aria-label="Hervorhebungsfarbe" />
+                  </label>
+
+                  <button class="toolbtn" type="button" data-action="normal" title="Normal (Format zurücksetzen)">N</button>
+                  <button class="toolbtn" type="button" data-cmd="removeFormat" title="Format entfernen">⨯</button>
+                </div>
+              </div>
+
+              <div
+                id="contentInput"
+                class="editor__content editor__content--rich"
+                contenteditable="true"
+                role="textbox"
+                aria-multiline="true"
+                data-placeholder="Schreib los…"
+                spellcheck="true"
+              ></div>
+            </div>
+
+            <div class="meta" id="metaText"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./note.js"></script>
+  </body>
+</html>
