@@ -1,15 +1,15 @@
 :root {
   color-scheme: light dark;
-  --bg: #0b0d10;
-  --panel: #0f131a;
-  --panel2: #0c1016;
-  --text: #e7edf7;
-  --muted: rgba(231, 237, 247, 0.62);
-  --faint: rgba(231, 237, 247, 0.12);
-  --border: rgba(231, 237, 247, 0.08);
-  --accent: #7dd3fc;
-  --danger: #fb7185;
-  --shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  --bg: #313131;
+  --panel: #2a2a2a;
+  --panel2: #262626;
+  --text: #f0f0f0;
+  --muted: rgba(240, 240, 240, 0.62);
+  --faint: rgba(240, 240, 240, 0.12);
+  --border: rgba(240, 240, 240, 0.10);
+  --accent: #9ad7ff;
+  --danger: #ff7a90;
+  --shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
   --radius: 16px;
   --radius2: 12px;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -36,9 +36,7 @@ html, body { height: 100%; }
 body {
   margin: 0;
   font-family: var(--sans);
-  background: radial-gradient(1200px 800px at 20% 0%, rgba(125, 211, 252, 0.10), transparent 55%),
-              radial-gradient(900px 600px at 80% 10%, rgba(56, 189, 248, 0.06), transparent 60%),
-              var(--bg);
+  background: var(--bg);
   color: var(--text);
   overflow: hidden;
 }
@@ -57,7 +55,7 @@ body {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
-  background: rgba(15, 19, 26, 0.55);
+  background: rgba(49, 49, 49, 0.85);
   backdrop-filter: blur(10px);
 }
 [data-theme="light"] .topbar { background: rgba(255, 255, 255, 0.75); }
