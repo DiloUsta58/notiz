@@ -248,6 +248,46 @@ body {
 }
 .menudiv { height: 1px; background: var(--border); margin: 6px 4px; }
 
+html.modal-open { overflow: hidden; }
+.modal[hidden] { display: none; }
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+}
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+.modal__panel {
+  position: relative;
+  width: min(520px, calc(100vw - 24px));
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(15, 19, 26, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+[data-theme="light"] .modal__panel { background: rgba(255, 255, 255, 0.94); }
+.modal__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.modal__title { font-weight: 650; font-size: 14px; }
+.modal__x {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.modal__x:hover { border-color: var(--faint); }
+.modal__body { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.modal__actions { margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px; }
+
 .pane--detail {
   position: relative;
   min-height: 0;

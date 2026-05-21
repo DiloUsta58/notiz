@@ -1,5 +1,6 @@
 import { deleteNote, getNote, putNote } from "./db.js";
 import { snapshotBackup } from "./backup.js";
+import { showAlert, showConfirm, wireModalDismiss } from "./ui.js";
 
 const qs = (sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 
@@ -8,6 +9,7 @@ const els = {
   subtitle: qs("#subtitle"),
   statusText: qs("#statusText"),
   metaText: qs("#metaText"),
+  backLink: /** @type {HTMLAnchorElement} */ (qs(".back")),
   titleInput: /** @type {HTMLInputElement} */ (qs("#titleInput")),
   categoryInput: /** @type {HTMLInputElement} */ (qs("#categoryInput")),
   tagsInput: /** @type {HTMLInputElement} */ (qs("#tagsInput")),
@@ -420,9 +422,20 @@ async function onDelete() {
   }
   const note = await getNote(state.id);
   const label = note?.title?.trim() ? `„${note.title.trim()}“` : "diese Notiz";
-  if (!confirm(`Wirklich ${label} löschen?`)) return;
+  const ok = await showConfirm(`Wirklich ${label} löschen?`, { title: "Löschen", danger: true, okText: "Löschen" });
+  if (!ok) return;
   await deleteNote(state.id);
   location.href = "./index.html";
+}
+
+async function confirmLeaveIfDirty() {
+  if (!state.dirty) return true;
+  return await showConfirm("Ungespeicherte Änderungen verwerfen und zurück?", {
+    title: "Ungespeichert",
+    danger: true,
+    okText: "Verlassen",
+    cancelText: "Bleiben",
+  });
 }
 
 function bindToolbar() {
@@ -450,7 +463,13 @@ function bindToolbar() {
 }
 
 function bind() {
+  wireModalDismiss();
   els.themeBtn.addEventListener("click", toggleTheme);
+  els.backLink.addEventListener("click", async (e) => {
+    if (!state.dirty) return;
+    e.preventDefault();
+    if (await confirmLeaveIfDirty()) location.href = "./index.html";
+  });
 
   els.titleInput.addEventListener("input", scheduleSave);
   els.categoryInput.addEventListener("input", scheduleSave);
@@ -525,12 +544,6 @@ function bind() {
 
   els.deleteBtn.addEventListener("click", onDelete);
 
-  window.addEventListener("beforeunload", (e) => {
-    if (!state.dirty) return;
-    e.preventDefault();
-    e.returnValue = "";
-  });
-
   document.addEventListener("keydown", async (e) => {
     const meta = e.ctrlKey || e.metaKey;
     if (meta && e.key.toLowerCase() === "s") {
@@ -538,9 +551,8 @@ function bind() {
       await saveNow();
     }
     if (e.key === "Escape") {
-      // quick back on mobile/keyboards
-      // eslint-disable-next-line no-restricted-globals
-      location.href = "./index.html";
+      e.preventDefault();
+      if (await confirmLeaveIfDirty()) location.href = "./index.html";
     }
   });
 
@@ -592,5 +604,5 @@ async function bootstrap() {
 
 bootstrap().catch((e) => {
   console.error(e);
-  alert("Start fehlgeschlagen.");
+  showAlert("Start fehlgeschlagen.", { title: "Fehler" });
 });

@@ -1,5 +1,6 @@
 import { deleteNote, exportJson, getNote, importJson, listNotes, putNote } from "./db.js";
 import { listBackups, restoreBackup, snapshotBackup } from "./backup.js";
+import { showAlert, showConfirm, wireModalDismiss } from "./ui.js";
 
 const qs = (sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 
@@ -284,7 +285,8 @@ function openMenu({ x, y, id }) {
     mk("Löschen", async () => {
       const note = await getNote(id);
       const label = note?.title?.trim() ? `„${note.title.trim()}“` : "diese Notiz";
-      if (!confirm(`Wirklich ${label} löschen?`)) return;
+      const ok = await showConfirm(`Wirklich ${label} löschen?`, { title: "Löschen", danger: true, okText: "Löschen" });
+      if (!ok) return;
       await deleteNote(id);
       await refreshNotes();
     }, true)
@@ -385,7 +387,12 @@ function openBackupMenu({ x, y }) {
       mk("Letztes Backup wiederherstellen", async () => {
         const latest = backups[0];
         if (!latest) return;
-        if (!confirm("Letztes Backup wiederherstellen? (Vorhandene Notizen werden überschrieben)")) return;
+        const ok = await showConfirm("Letztes Backup wiederherstellen? (Vorhandene Notizen werden überschrieben)", {
+          title: "Restore",
+          danger: true,
+          okText: "Wiederherstellen",
+        });
+        if (!ok) return;
         await restoreBackup(latest);
         await refreshNotes();
       }, true)
@@ -397,7 +404,12 @@ function openBackupMenu({ x, y }) {
       const when = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(b.ts));
       m.append(
         mk(`Restore · ${when}`, async () => {
-          if (!confirm(`Backup von ${when} wiederherstellen? (Überschreibt aktuelle Notizen)`)) return;
+          const ok = await showConfirm(`Backup von ${when} wiederherstellen? (Überschreibt aktuelle Notizen)`, {
+            title: "Restore",
+            danger: true,
+            okText: "Wiederherstellen",
+          });
+          if (!ok) return;
           await restoreBackup(b);
           await refreshNotes();
         }, true)
@@ -411,6 +423,7 @@ function openBackupMenu({ x, y }) {
 }
 
 function bind() {
+  wireModalDismiss();
   els.newBtn.addEventListener("click", createNote);
   els.themeBtn.addEventListener("click", toggleTheme);
   els.exportBtn.addEventListener("click", onExport);
@@ -427,7 +440,7 @@ function bind() {
       await onImport(file);
     } catch (e) {
       console.error(e);
-      alert("Import fehlgeschlagen (ungültige Datei).");
+      await showAlert("Import fehlgeschlagen (ungültige Datei).", { title: "Import" });
     }
   });
 
@@ -472,5 +485,5 @@ async function bootstrap() {
 
 bootstrap().catch((e) => {
   console.error(e);
-  alert("Start fehlgeschlagen.");
+  showAlert("Start fehlgeschlagen.", { title: "Fehler" });
 });

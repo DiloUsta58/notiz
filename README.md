@@ -37,3 +37,14 @@ Dann im Browser öffnen: `http://localhost:5173/`
 - Android/Chrome: Seite öffnen, Browser-Menü → „App installieren“ oder „Zum Startbildschirm hinzufügen“.
 - iOS/Safari: Teilen-Menü → „Zum Home-Bildschirm“.
 - Wichtig: Für echte PWA-Installation braucht der Browser `https://` oder `localhost`. Bei Zugriff vom Handy über eine lokale `http://192.168...` Adresse kann der Service Worker blockiert werden.
+
+## Android APK erstellen
+
+Das Verzeichnis `android/` enthält eine native Android-WebView-App, die die Web-App lokal aus `assets/www` lädt.
+
+```powershell
+.\tools\sync-web-assets.ps1
+.\tools\build-apk.ps1 -Variant Debug
+```
+
+Das erzeugte Debug-APK wird zusätzlich nach `Notiz-debug.apk` im Projektordner kopiert.

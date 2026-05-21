@@ -1,4 +1,4 @@
-const CACHE = "notiz-cache-v5";
+const CACHE = "notiz-cache-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const ASSETS = [
   "./app.js",
   "./note.js",
   "./backup.js",
+  "./ui.js",
   "./db.js",
   "./manifest.webmanifest",
   "./icon/notes.ico",
