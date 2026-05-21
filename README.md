@@ -41,16 +41,3 @@ Dann im Browser öffnen: `http://localhost:5173/`
 ## Android APK erstellen
 
 Das Verzeichnis `android/` enthält eine native Android-WebView-App, die die Web-App lokal aus `assets/www` lädt.
-
-```powershell
-.\tools\sync-web-assets.ps1
-.\tools\build-apk-signed.ps1 -Variant Debug
-```
-
-Das erzeugte Debug-APK wird zusätzlich nach `Notiz-debug-signed.apk` im Projektordner kopiert.
-
-Release (signiert):
-
-```powershell
-.\tools\build-apk-signed.ps1 -Variant Release
-```
