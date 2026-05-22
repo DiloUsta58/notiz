@@ -490,6 +490,31 @@ html.modal-open { overflow: hidden; }
 .editor__content--rich .checkitem .checktext { user-select: text; }
 .editor__content--rich .checktext { outline: none; }
 .editor__content--rich .checktext:empty::before { content: "Aufgabe"; color: var(--muted); }
+.editor__content--rich img.noteimg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.imgdlg__row { display: flex; gap: 10px; align-items: center; }
+.imgdlg__row--between { justify-content: space-between; }
+.imgdlg__input {
+  flex: 1;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  outline: none;
+  font-size: 13px;
+}
+.imgdlg__input:focus { border-color: rgba(154, 215, 255, 0.45); box-shadow: 0 0 0 4px rgba(154, 215, 255, 0.12); }
+.imgdlg__lock { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+.imgdlg__quick { display: flex; gap: 6px; align-items: center; }
 
 .meta {
   padding: 8px 12px;

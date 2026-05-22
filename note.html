@@ -72,6 +72,10 @@
                   <button class="toolbtn" type="button" data-cmd="justifyCenter" title="Zentriert">≡</button>
                   <button class="toolbtn" type="button" data-cmd="justifyRight" title="Rechts">⟹</button>
                   <button class="toolbtn" type="button" data-cmd="justifyFull" title="Blocksatz">▦</button>
+                  <span class="toolsep" aria-hidden="true"></span>
+                  <label class="toolbtn filebtn" id="imagePickerBtn" for="imageInput" title="Bild einfügen" aria-label="Bild einfügen">
+                    <span aria-hidden="true">🖼</span>
+                  </label>
                 </div>
 
                 <div class="toolbar__group toolbar__group--right" aria-label="Stil">
@@ -122,6 +126,7 @@
                 </div>
               </div>
 
+              <input id="imageInput" class="filebtn__input" type="file" accept="image/*" />
               <div
                 id="contentInput"
                 class="editor__content editor__content--rich"

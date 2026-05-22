@@ -93,6 +93,30 @@ function toggleTheme() {
   updateThemeButton();
 }
 
+function isNativeAndroidWrapper() {
+  return Boolean(window.NotizAndroid) || /\bNotizAndroid\//.test(navigator.userAgent);
+}
+
+async function setupServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  if (isNativeAndroidWrapper()) {
+    try {
+      const registrations = navigator.serviceWorker.getRegistrations
+        ? await navigator.serviceWorker.getRegistrations()
+        : [];
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+    } catch {
+      // ignore
+    }
+    return;
+  }
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+
 function setStatus(msg) {
   // index has no status bar; no-op
   void msg;
@@ -473,9 +497,7 @@ async function bootstrap() {
   await refreshNotes();
   els.searchMeta.textContent = `${state.notes.length} Notizen`;
 
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  }
+  await setupServiceWorker();
 
   window.setInterval(() => snapshotBackup("interval").catch(() => {}), 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => {

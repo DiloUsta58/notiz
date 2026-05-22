@@ -1,6 +1,6 @@
 import { deleteNote, getNote, putNote } from "./db.js";
 import { snapshotBackup } from "./backup.js";
-import { showAlert, showConfirm, wireModalDismiss } from "./ui.js";
+import { showAlert, showConfirm, showDialog, wireModalDismiss } from "./ui.js";
 
 const qs = (sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 
@@ -19,6 +19,8 @@ const els = {
   fontSelect: /** @type {HTMLSelectElement} */ (qs("#fontSelect")),
   textColor: /** @type {HTMLInputElement} */ (qs("#textColor")),
   highlightColor: /** @type {HTMLInputElement} */ (qs("#highlightColor")),
+  imagePickerBtn: /** @type {HTMLElement} */ (qs("#imagePickerBtn")),
+  imageInput: /** @type {HTMLInputElement} */ (qs("#imageInput")),
   deleteBtn: /** @type {HTMLButtonElement} */ (qs("#deleteBtn")),
 };
 
@@ -62,6 +64,35 @@ function toggleTheme() {
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem("notiz_theme", next);
   updateThemeButton();
+}
+
+function nativeAndroidPicker() {
+  const picker = window.NotizAndroid;
+  return picker && typeof picker.pickImage === "function" ? picker : null;
+}
+
+function isNativeAndroidWrapper() {
+  return Boolean(nativeAndroidPicker()) || /\bNotizAndroid\//.test(navigator.userAgent);
+}
+
+async function setupServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  if (isNativeAndroidWrapper()) {
+    try {
+      const registrations = navigator.serviceWorker.getRegistrations
+        ? await navigator.serviceWorker.getRegistrations()
+        : [];
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+    } catch {
+      // ignore
+    }
+    return;
+  }
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
 function getEditorSnapshot() {
@@ -438,6 +469,182 @@ async function confirmLeaveIfDirty() {
   });
 }
 
+function insertImageDataUrl(dataUrl, altText) {
+  els.contentInput.focus();
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.alt = altText || "Bild";
+  img.className = "noteimg";
+  img.loading = "lazy";
+  img.decoding = "async";
+  img.setAttribute("data-w", "100%");
+  img.style.width = "100%";
+  img.style.height = "auto";
+
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    els.contentInput.appendChild(img);
+    els.contentInput.appendChild(document.createElement("br"));
+    ensureTrailingLine();
+    scheduleSave();
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(img);
+  range.setStartAfter(img);
+  range.setEndAfter(img);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  ensureTrailingLine();
+  scheduleSave();
+}
+
+async function handleImageFile(file) {
+  if (!file) return;
+  // Android WebView can provide File objects without a type; accept by extension as fallback.
+  const name = String(file.name || "");
+  const type = String(file.type || "");
+  const isImage =
+    (type && type.startsWith("image/")) ||
+    /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(name);
+  if (!isImage) {
+    await showAlert("Bitte eine Bilddatei auswählen.", { title: "Bild" });
+    return;
+  }
+  // Keep simple: store as data URL (works offline, included in export).
+  const reader = new FileReader();
+  const dataUrl = await new Promise((resolve, reject) => {
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  });
+  insertImageDataUrl(String(dataUrl), name || "Bild");
+}
+
+window.notizInsertImageFromAndroid = async (dataUrl, name) => {
+  try {
+    if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
+      await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+      return;
+    }
+    insertImageDataUrl(dataUrl, name || "Bild");
+  } catch (e) {
+    console.error(e);
+    await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+  }
+};
+
+function normalizeSizeValue(v) {
+  const s = String(v || "").trim();
+  if (!s) return null;
+  if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`;
+  if (/^\d+(\.\d+)?(px|%)$/i.test(s)) return s.toLowerCase();
+  return "__invalid__";
+}
+
+async function openImageSizeDialog(img) {
+  const wrap = document.createElement("div");
+  wrap.className = "imgdlg";
+
+  const row1 = document.createElement("div");
+  row1.className = "imgdlg__row";
+
+  const widthInput = document.createElement("input");
+  widthInput.className = "imgdlg__input";
+  widthInput.placeholder = "Breite (z.B. 80% oder 320px)";
+  widthInput.value = img.getAttribute("data-w") || img.style.width || "";
+
+  const heightInput = document.createElement("input");
+  heightInput.className = "imgdlg__input";
+  heightInput.placeholder = "Höhe (leer = auto)";
+  heightInput.value = img.getAttribute("data-h") || img.style.height || "";
+
+  row1.append(widthInput, heightInput);
+
+  const row2 = document.createElement("div");
+  row2.className = "imgdlg__row imgdlg__row--between";
+
+  const lockLabel = document.createElement("label");
+  lockLabel.className = "imgdlg__lock";
+  const lock = document.createElement("input");
+  lock.type = "checkbox";
+  lock.checked = (img.getAttribute("data-lock") || "1") === "1";
+  const lockText = document.createElement("span");
+  lockText.textContent = "Seitenverhältnis halten";
+  lockLabel.append(lock, lockText);
+
+  const quick = document.createElement("div");
+  quick.className = "imgdlg__quick";
+  const mkQuick = (label, val) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn btn--ghost";
+    b.textContent = label;
+    b.addEventListener("click", () => {
+      widthInput.value = val;
+      heightInput.value = "";
+    });
+    return b;
+  };
+  quick.append(mkQuick("25%", "25%"), mkQuick("50%", "50%"), mkQuick("100%", "100%"));
+
+  row2.append(lockLabel, quick);
+
+  wrap.append(row1, row2);
+
+  const result = await showDialog({
+    title: "Bildgröße",
+    body: wrap,
+    focusSelector: ".imgdlg__input",
+    buttons: [
+      { id: "cancel", label: "Abbrechen", className: "btn btn--ghost" },
+      { id: "remove", label: "Entfernen", danger: true },
+      { id: "apply", label: "Übernehmen" },
+    ],
+  });
+
+  if (result === "remove") {
+    img.remove();
+    ensureTrailingLine();
+    scheduleSave();
+    return;
+  }
+  if (result !== "apply") return;
+
+  const w = normalizeSizeValue(widthInput.value);
+  const h = normalizeSizeValue(heightInput.value);
+  if (w === "__invalid__" || h === "__invalid__") {
+    await showAlert("Ungültige Größe. Erlaubt: Zahl, px oder % (z.B. 80% oder 320px).", { title: "Bildgröße" });
+    return;
+  }
+
+  const lockOn = lock.checked;
+  img.setAttribute("data-lock", lockOn ? "1" : "0");
+
+  if (w) {
+    img.style.width = w;
+    img.setAttribute("data-w", w);
+  } else {
+    img.style.removeProperty("width");
+    img.removeAttribute("data-w");
+  }
+
+  if (lockOn) {
+    img.style.height = "auto";
+    img.removeAttribute("data-h");
+  } else if (h) {
+    img.style.height = h;
+    img.setAttribute("data-h", h);
+  } else {
+    img.style.height = "auto";
+    img.removeAttribute("data-h");
+  }
+
+  ensureTrailingLine();
+  scheduleSave();
+}
+
 function bindToolbar() {
   document.addEventListener("click", (e) => {
     const t = /** @type {HTMLElement|null} */ (e.target instanceof HTMLElement ? e.target : null);
@@ -499,6 +706,15 @@ function bind() {
     ensureTrailingLine();
     scheduleSave();
   });
+
+  els.contentInput.addEventListener("click", async (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const img = t.closest("img.noteimg");
+    if (!(img instanceof HTMLImageElement)) return;
+    e.preventDefault();
+    await openImageSizeDialog(img);
+  });
   els.contentInput.addEventListener("pointerdown", (e) => {
     const t = e.target;
     // Prevent checkbox rows from stealing focus/caret when clicking the empty area.
@@ -543,6 +759,29 @@ function bind() {
   els.contentInput.addEventListener("blur", saveNow);
 
   els.deleteBtn.addEventListener("click", onDelete);
+
+  els.imageInput.addEventListener("change", async () => {
+    const file = els.imageInput.files && els.imageInput.files.length ? els.imageInput.files[0] : null;
+    els.imageInput.value = ""; // reset AFTER we captured the file reference
+    try {
+      await handleImageFile(file);
+    } catch (e) {
+      console.error(e);
+      await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    }
+  });
+
+  els.imagePickerBtn.addEventListener("click", async (e) => {
+    const picker = nativeAndroidPicker();
+    if (!picker) return;
+    e.preventDefault();
+    try {
+      picker.pickImage();
+    } catch (err) {
+      console.error(err);
+      await showAlert("Bildauswahl konnte nicht geöffnet werden.", { title: "Bild" });
+    }
+  });
 
   document.addEventListener("keydown", async (e) => {
     const meta = e.ctrlKey || e.metaKey;
@@ -594,7 +833,7 @@ async function bootstrap() {
   ensureCssMode();
   bind();
   await loadNoteFromUrl();
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  await setupServiceWorker();
 
   window.setInterval(() => snapshotBackup("interval").catch(() => {}), 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => {

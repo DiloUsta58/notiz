@@ -106,3 +106,24 @@ export function showConfirm(message, opts = {}) {
   });
 }
 
+export function showDialog(opts) {
+  return new Promise((resolve) => {
+    const title = opts?.title || "";
+    const body = opts?.body instanceof Node ? opts.body : document.createElement("div");
+    const buttons = Array.isArray(opts?.buttons) ? opts.buttons : [{ id: "ok", label: "OK" }];
+
+    const actionButtons = buttons.map((btn) =>
+      button(btn.label || "OK", btn.danger ? "btn btn--danger" : (btn.className || "btn"), () => {
+        closeModal();
+        resolve(btn.id);
+      })
+    );
+
+    setModal(title, body, actionButtons);
+    openModal();
+
+    const focus = opts?.focusSelector ? ensureModal().querySelector(opts.focusSelector) : null;
+    if (focus instanceof HTMLElement) focus.focus();
+    else actionButtons[actionButtons.length - 1]?.focus?.();
+  });
+}
