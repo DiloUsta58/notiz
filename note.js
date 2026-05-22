@@ -522,6 +522,59 @@ async function handleImageFile(file) {
   insertImageDataUrl(String(dataUrl), name || "Bild");
 }
 
+function nextTick() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function readPendingAndroidImage(nameHint, lengthHint) {
+  const bridge = nativeAndroidPicker();
+  if (!bridge) throw new Error("Android bridge not available");
+
+  const lengthFromBridge =
+    typeof bridge.getPendingImageLength === "function" ? Number(bridge.getPendingImageLength()) : 0;
+  const totalLength = lengthFromBridge || Number(lengthHint || 0);
+  if (!Number.isFinite(totalLength) || totalLength <= 0) throw new Error("Android image is empty");
+
+  const chunkSizeFromBridge =
+    typeof bridge.getImageChunkSize === "function" ? Number(bridge.getImageChunkSize()) : 65536;
+  const chunkSize = Math.max(4096, Math.min(65536, chunkSizeFromBridge || 65536));
+
+  const parts = [];
+  for (let offset = 0; offset < totalLength; offset += chunkSize) {
+    const chunk = bridge.readPendingImageChunk(offset, Math.min(chunkSize, totalLength - offset));
+    if (typeof chunk !== "string" || chunk.length === 0) throw new Error(`Missing Android image chunk at ${offset}`);
+    parts.push(chunk);
+    if (parts.length % 8 === 0) await nextTick();
+  }
+
+  const bridgeName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : "";
+  return {
+    dataUrl: parts.join(""),
+    name: String(bridgeName || nameHint || "Bild"),
+  };
+}
+
+window.notizReceiveAndroidImage = async (nameHint, lengthHint) => {
+  const bridge = nativeAndroidPicker();
+  try {
+    const { dataUrl, name } = await readPendingAndroidImage(nameHint, lengthHint);
+    if (!dataUrl.startsWith("data:image/")) {
+      await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+      return;
+    }
+    insertImageDataUrl(dataUrl, name || "Bild");
+  } catch (e) {
+    console.error(e);
+    await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+  } finally {
+    try {
+      bridge?.clearPendingImage?.();
+    } catch {
+      // ignore
+    }
+  }
+};
+
 window.notizInsertImageFromAndroid = async (dataUrl, name) => {
   try {
     if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {

@@ -1,4 +1,4 @@
-const CACHE = "notiz-cache-v17";
+const CACHE = "notiz-cache-v18";
 const ASSETS = [
   "./",
   "./index.html",
