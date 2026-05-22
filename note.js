@@ -469,17 +469,22 @@ async function confirmLeaveIfDirty() {
   });
 }
 
-function insertImageDataUrl(dataUrl, altText) {
-  els.contentInput.focus();
+function createNoteImage(src, altText, imageId) {
   const img = document.createElement("img");
-  img.src = dataUrl;
+  img.src = src;
   img.alt = altText || "Bild";
   img.className = "noteimg";
   img.loading = "lazy";
   img.decoding = "async";
   img.setAttribute("data-w", "100%");
+  if (imageId) img.setAttribute("data-android-image-id", imageId);
   img.style.width = "100%";
   img.style.height = "auto";
+  return img;
+}
+
+function insertImageElement(img) {
+  els.contentInput.focus();
 
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) {
@@ -498,6 +503,31 @@ function insertImageDataUrl(dataUrl, altText) {
   sel.addRange(range);
   ensureTrailingLine();
   scheduleSave();
+}
+
+function insertImageDataUrl(dataUrl, altText) {
+  insertImageElement(createNoteImage(dataUrl, altText, ""));
+}
+
+async function insertAndroidImageUrl(imageId, src, altText) {
+  const id = String(imageId || "");
+  const existing = id
+    ? Array.from(els.contentInput.querySelectorAll("img[data-android-image-id]")).some(
+        (img) => img.getAttribute("data-android-image-id") === id
+      )
+    : false;
+  if (existing) {
+    clearPendingAndroidImage();
+    return;
+  }
+  if (!src || typeof src !== "string" || !src.startsWith("https://notiz.local/android-image/")) {
+    await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    return;
+  }
+  insertImageElement(createNoteImage(src, altText || "Bild", id));
+  await scheduleSave();
+  await saveNow();
+  clearPendingAndroidImage();
 }
 
 async function handleImageFile(file) {
@@ -520,10 +550,19 @@ async function handleImageFile(file) {
     reader.readAsDataURL(file);
   });
   insertImageDataUrl(String(dataUrl), name || "Bild");
+  clearPendingAndroidImage();
 }
 
 function nextTick() {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function clearPendingAndroidImage() {
+  try {
+    nativeAndroidPicker()?.clearPendingImage?.();
+  } catch {
+    // ignore
+  }
 }
 
 async function readPendingAndroidImage(nameHint, lengthHint) {
@@ -554,26 +593,79 @@ async function readPendingAndroidImage(nameHint, lengthHint) {
   };
 }
 
-window.notizReceiveAndroidImage = async (nameHint, lengthHint) => {
+let androidImageReceiveInProgress = false;
+let lastAndroidImageId = "";
+
+async function receivePendingAndroidImage(imageId, nameHint, lengthHint, silent) {
   const bridge = nativeAndroidPicker();
+  const transferId = String(imageId || "");
+  if (transferId && transferId === lastAndroidImageId) return false;
+  if (androidImageReceiveInProgress) return false;
+
+  const pendingLength =
+    bridge && typeof bridge.getPendingImageLength === "function" ? Number(bridge.getPendingImageLength()) : 0;
+  if (!pendingLength) {
+    if (!silent) await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+    return false;
+  }
+
+  androidImageReceiveInProgress = true;
+  let inserted = false;
   try {
-    const { dataUrl, name } = await readPendingAndroidImage(nameHint, lengthHint);
+    const { dataUrl, name } = await readPendingAndroidImage(nameHint, lengthHint || pendingLength);
     if (!dataUrl.startsWith("data:image/")) {
-      await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
-      return;
+      if (!silent) await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+      return false;
     }
     insertImageDataUrl(dataUrl, name || "Bild");
+    inserted = true;
+    if (transferId) lastAndroidImageId = transferId;
+    return true;
+  } catch (e) {
+    console.error(e);
+    if (!silent) await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    return false;
+  } finally {
+    if (inserted) clearPendingAndroidImage();
+    androidImageReceiveInProgress = false;
+  }
+}
+
+window.notizReceiveAndroidImage = async (imageId, nameHint, lengthHint) => {
+  await receivePendingAndroidImage(imageId, nameHint, lengthHint, false);
+};
+
+window.notizMaybeReceiveAndroidImage = async (imageId, nameHint, lengthHint) => {
+  await receivePendingAndroidImage(imageId, nameHint, lengthHint, true);
+};
+
+window.notizInsertImageUrlFromAndroid = async (imageId, src, name) => {
+  try {
+    await insertAndroidImageUrl(imageId, src, name || "Bild");
   } catch (e) {
     console.error(e);
     await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
-  } finally {
-    try {
-      bridge?.clearPendingImage?.();
-    } catch {
-      // ignore
-    }
   }
 };
+
+function pollPendingAndroidImage(timeoutMs = 30000) {
+  if (!nativeAndroidPicker()) return;
+  const startedAt = Date.now();
+  const tick = async () => {
+    if (Date.now() - startedAt > timeoutMs) return;
+    const bridge = nativeAndroidPicker();
+    const pendingLength =
+      bridge && typeof bridge.getPendingImageLength === "function" ? Number(bridge.getPendingImageLength()) : 0;
+    if (pendingLength > 0) {
+      const imageId = typeof bridge.getPendingImageId === "function" ? bridge.getPendingImageId() : "";
+      const imageName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : "Bild";
+      const inserted = await receivePendingAndroidImage(imageId, imageName, pendingLength, true);
+      if (inserted) return;
+    }
+    window.setTimeout(tick, 500);
+  };
+  window.setTimeout(tick, 500);
+}
 
 window.notizInsertImageFromAndroid = async (dataUrl, name) => {
   try {
@@ -660,7 +752,8 @@ async function openImageSizeDialog(img) {
   if (result === "remove") {
     img.remove();
     ensureTrailingLine();
-    scheduleSave();
+    await scheduleSave();
+    await saveNow();
     return;
   }
   if (result !== "apply") return;
@@ -695,7 +788,8 @@ async function openImageSizeDialog(img) {
   }
 
   ensureTrailingLine();
-  scheduleSave();
+  await scheduleSave();
+  await saveNow();
 }
 
 function bindToolbar() {
@@ -818,8 +912,10 @@ function bind() {
     els.imageInput.value = ""; // reset AFTER we captured the file reference
     try {
       await handleImageFile(file);
+      if (!file) pollPendingAndroidImage(10000);
     } catch (e) {
       console.error(e);
+      pollPendingAndroidImage(10000);
       await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
     }
   });
@@ -830,10 +926,16 @@ function bind() {
     e.preventDefault();
     try {
       picker.pickImage();
+      pollPendingAndroidImage();
     } catch (err) {
       console.error(err);
       await showAlert("Bildauswahl konnte nicht geöffnet werden.", { title: "Bild" });
     }
+  });
+
+  window.addEventListener("focus", () => pollPendingAndroidImage(6000));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pollPendingAndroidImage(6000);
   });
 
   document.addEventListener("keydown", async (e) => {
