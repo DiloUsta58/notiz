@@ -26,6 +26,7 @@ const els = {
 
 /** @type {{id: string|null, saving: boolean, dirty: boolean}} */
 const state = { id: null, saving: false, dirty: false };
+const DEFAULT_IMAGE_EDITOR_WIDTH = "25%";
 
 function formatTs(ts) {
   const d = new Date(ts);
@@ -73,26 +74,6 @@ function nativeAndroidPicker() {
 
 function isNativeAndroidWrapper() {
   return Boolean(nativeAndroidPicker()) || /\bNotizAndroid\//.test(navigator.userAgent);
-}
-
-async function setupServiceWorker() {
-  if (!("serviceWorker" in navigator)) return;
-  if (isNativeAndroidWrapper()) {
-    try {
-      const registrations = navigator.serviceWorker.getRegistrations
-        ? await navigator.serviceWorker.getRegistrations()
-        : [];
-      await Promise.all(registrations.map((registration) => registration.unregister()));
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      }
-    } catch {
-      // ignore
-    }
-    return;
-  }
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
 function getEditorSnapshot() {
@@ -508,9 +489,9 @@ function createNoteImage(src, altText, imageId) {
   img.className = "noteimg";
   img.loading = "lazy";
   img.decoding = "async";
-  img.setAttribute("data-w", "100%");
+  img.setAttribute("data-w", DEFAULT_IMAGE_EDITOR_WIDTH);
   if (imageId) img.setAttribute("data-android-image-id", imageId);
-  img.style.width = "100%";
+  img.style.width = DEFAULT_IMAGE_EDITOR_WIDTH;
   img.style.height = "auto";
   return img;
 }
@@ -552,7 +533,7 @@ async function insertAndroidImageUrl(imageId, src, altText) {
     clearPendingAndroidImage();
     return;
   }
-  if (!src || typeof src !== "string" || !src.startsWith("https://notiz.local/android-image/")) {
+  if (!src || typeof src !== "string" || !src.includes("/android-image/")) {
     await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
     return;
   }
@@ -722,9 +703,37 @@ window.notizInsertImageFromAndroid = async (dataUrl, name) => {
 function normalizeSizeValue(v) {
   const s = String(v || "").trim();
   if (!s) return null;
+  if (s.toLowerCase() === "auto") return null;
   if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`;
   if (/^\d+(\.\d+)?(px|%)$/i.test(s)) return s.toLowerCase();
   return "__invalid__";
+}
+
+function createPercentSizeSelect(currentValue) {
+  const select = document.createElement("select");
+  select.className = "imgdlg__input imgdlg__select";
+  select.setAttribute("aria-label", "Breite");
+
+  const customValue = normalizeSizeValue(currentValue);
+  const values = [];
+  for (let pct = 10; pct <= 100; pct += 5) values.push(`${pct}%`);
+
+  for (const value of values) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  }
+
+  if (customValue && customValue !== "__invalid__" && !values.includes(customValue)) {
+    const option = document.createElement("option");
+    option.value = customValue;
+    option.textContent = customValue;
+    select.insertBefore(option, select.firstChild);
+  }
+
+  select.value = customValue && customValue !== "__invalid__" ? customValue : DEFAULT_IMAGE_EDITOR_WIDTH;
+  return select;
 }
 
 async function openImageSizeDialog(img) {
@@ -734,10 +743,7 @@ async function openImageSizeDialog(img) {
   const row1 = document.createElement("div");
   row1.className = "imgdlg__row";
 
-  const widthInput = document.createElement("input");
-  widthInput.className = "imgdlg__input";
-  widthInput.placeholder = "Breite (z.B. 80% oder 320px)";
-  widthInput.value = img.getAttribute("data-w") || img.style.width || "";
+  const widthInput = createPercentSizeSelect(img.getAttribute("data-w") || img.style.width || DEFAULT_IMAGE_EDITOR_WIDTH);
 
   const heightInput = document.createElement("input");
   heightInput.className = "imgdlg__input";
@@ -771,7 +777,7 @@ async function openImageSizeDialog(img) {
     });
     return b;
   };
-  quick.append(mkQuick("25%", "25%"), mkQuick("50%", "50%"), mkQuick("100%", "100%"));
+  quick.append(mkQuick("10%", "10%"), mkQuick("25%", "25%"), mkQuick("50%", "50%"), mkQuick("100%", "100%"));
 
   row2.append(lockLabel, quick);
 
@@ -1033,7 +1039,6 @@ async function bootstrap() {
   ensureCssMode();
   bind();
   await loadNoteFromUrl();
-  await setupServiceWorker();
 
   window.setInterval(() => snapshotBackup("interval").catch(() => {}), 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => {
