@@ -384,10 +384,12 @@ function normalizeChecklist(root) {
 }
 
 let creating = false;
+let createPromise = /** @type {Promise<string> | null} */ (null);
 async function ensureNote() {
-  if (state.id || creating) return;
+  if (state.id) return state.id;
+  if (createPromise) return createPromise;
   creating = true;
-  try {
+  createPromise = (async () => {
     const now = Date.now();
     const { title, content, category, tags } = getEditorSnapshot();
     const note = {
@@ -403,44 +405,74 @@ async function ensureNote() {
     state.id = note.id;
     setMeta(note);
     setStatus("Gespeichert");
-    state.dirty = false;
     history.replaceState(null, "", `./note.html?id=${encodeURIComponent(note.id)}`);
+    return note.id;
+  })();
+  try {
+    return await createPromise;
   } finally {
     creating = false;
+    createPromise = null;
   }
 }
 
 let saveTimer = /** @type {number | null} */ (null);
+let savePromise = /** @type {Promise<void> | null} */ (null);
+
 async function scheduleSave() {
+  state.dirty = true;
+  setStatus("Änderungen…");
   await ensureNote();
   if (!state.id) return;
-  state.dirty = true;
   if (saveTimer) window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(async () => {
     saveTimer = null;
-    await saveNow();
+    await saveNow(false);
   }, 350);
-  setStatus("Änderungen…");
 }
 
-async function saveNow() {
-  if (!state.id || state.saving || !state.dirty) return;
-  state.saving = true;
-  try {
+async function saveNow(force = false) {
+  if (saveTimer) {
+    window.clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (state.saving) {
+    if (savePromise) await savePromise;
+    if (!force && !state.dirty) return;
+  }
+  await ensureNote();
+  if (!state.id || (!force && !state.dirty)) return;
+
+  const run = (async () => {
     const existing = await getNote(state.id);
-    if (!existing) return;
+    const now = Date.now();
     const { title, content, category, tags } = getEditorSnapshot();
-    const updated = { ...existing, title, content, category, tags, updatedAt: Date.now() };
+    const updated = {
+      ...(existing || { id: state.id, createdAt: now }),
+      id: state.id,
+      title,
+      content,
+      category,
+      tags,
+      updatedAt: now,
+    };
     await putNote(updated);
     state.dirty = false;
     setMeta(updated);
     setStatus("Gespeichert");
     snapshotBackup("save").catch(() => {});
+  })();
+
+  try {
+    state.saving = true;
+    savePromise = run;
+    await run;
   } catch (e) {
     console.error(e);
     setStatus("Fehler beim Speichern");
   } finally {
     state.saving = false;
+    savePromise = null;
   }
 }
 
@@ -526,7 +558,7 @@ async function insertAndroidImageUrl(imageId, src, altText) {
   }
   insertImageElement(createNoteImage(src, altText || "Bild", id));
   await scheduleSave();
-  await saveNow();
+  await saveNow(true);
   clearPendingAndroidImage();
 }
 
@@ -654,6 +686,13 @@ function pollPendingAndroidImage(timeoutMs = 30000) {
   const tick = async () => {
     if (Date.now() - startedAt > timeoutMs) return;
     const bridge = nativeAndroidPicker();
+    const webUrl = bridge && typeof bridge.getPendingImageWebUrl === "function" ? String(bridge.getPendingImageWebUrl() || "") : "";
+    if (webUrl) {
+      const imageId = typeof bridge.getPendingImageId === "function" ? bridge.getPendingImageId() : "";
+      const imageName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : "Bild";
+      await insertAndroidImageUrl(imageId, webUrl, imageName);
+      return;
+    }
     const pendingLength =
       bridge && typeof bridge.getPendingImageLength === "function" ? Number(bridge.getPendingImageLength()) : 0;
     if (pendingLength > 0) {
@@ -820,9 +859,9 @@ function bind() {
   wireModalDismiss();
   els.themeBtn.addEventListener("click", toggleTheme);
   els.backLink.addEventListener("click", async (e) => {
-    if (!state.dirty) return;
     e.preventDefault();
-    if (await confirmLeaveIfDirty()) location.href = "./index.html";
+    await saveNow(true);
+    location.href = "./index.html";
   });
 
   els.titleInput.addEventListener("input", scheduleSave);
@@ -946,12 +985,18 @@ function bind() {
     }
     if (e.key === "Escape") {
       e.preventDefault();
-      if (await confirmLeaveIfDirty()) location.href = "./index.html";
+      await saveNow(true);
+      location.href = "./index.html";
     }
   });
 
   bindToolbar();
 }
+
+window.notizSaveAndGoIndex = async () => {
+  await saveNow(true);
+  location.href = "./index.html";
+};
 
 async function loadNoteFromUrl() {
   const params = new URLSearchParams(location.search);
