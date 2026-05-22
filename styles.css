@@ -70,7 +70,35 @@ body {
 .brand__name { font-weight: 650; letter-spacing: -0.2px; line-height: 1.1; }
 .brand__sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-.actions { display: flex; gap: 8px; }
+.actions { display: flex; gap: 8px; align-items: center; }
+.langswitch {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+}
+.langswitch__flag {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.langswitch__select {
+  max-width: 92px;
+  border: none;
+  background: #2b2b2b;
+  color: var(--text);
+  outline: none;
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 3px 6px;
+}
+[data-theme="light"] .langswitch__select { background: #ffffff; color: var(--text); }
 .back {
   width: 40px;
   height: 40px;
@@ -411,10 +439,29 @@ html.modal-open { overflow: hidden; }
 .toollabel__text { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 .toolselect {
   border: none;
-  background: transparent;
+  background: #2b2b2b;
   color: var(--text);
   outline: none;
   font-size: 12px;
+  border-radius: 8px;
+  padding: 3px 18px 3px 6px;
+}
+.toolselect option,
+.langswitch__select option,
+.imgdlg__select option {
+  background: #2b2b2b;
+  color: #f0f0f0;
+}
+[data-theme="light"] .toolselect,
+[data-theme="light"] .imgdlg__select {
+  background: #ffffff;
+  color: #121826;
+}
+[data-theme="light"] .toolselect option,
+[data-theme="light"] .langswitch__select option,
+[data-theme="light"] .imgdlg__select option {
+  background: #ffffff;
+  color: #121826;
 }
 .tooltext {
   border: none;
@@ -517,7 +564,7 @@ html.modal-open { overflow: hidden; }
   box-sizing: border-box;
 }
 .imgdlg__input:focus { border-color: rgba(154, 215, 255, 0.45); box-shadow: 0 0 0 4px rgba(154, 215, 255, 0.12); }
-.imgdlg__select { appearance: auto; }
+.imgdlg__select { appearance: auto; background: #2b2b2b; color: #f0f0f0; }
 .imgdlg__lock { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
 .imgdlg__quick { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 

@@ -1,6 +1,7 @@
 import { deleteNote, getNote, putNote } from "./db.js";
 import { snapshotBackup } from "./backup.js";
 import { showAlert, showConfirm, showDialog, wireModalDismiss } from "./ui.js";
+import { applyI18n, getLang, initLanguageSwitcher, t } from "./i18n.js";
 
 const qs = (sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 
@@ -30,7 +31,7 @@ const DEFAULT_IMAGE_EDITOR_WIDTH = "25%";
 
 function formatTs(ts) {
   const d = new Date(ts);
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(d);
+  return new Intl.DateTimeFormat(getLang() === "tr" ? "tr-TR" : "de-DE", { dateStyle: "medium", timeStyle: "short" }).format(d);
 }
 
 function setStatus(msg) {
@@ -49,7 +50,7 @@ function looksLikeHtml(s) {
 
 function updateThemeButton() {
   const current = document.documentElement.getAttribute("data-theme") || "dark";
-  els.themeBtn.setAttribute("aria-label", `Theme: ${current}`);
+  els.themeBtn.setAttribute("aria-label", `${t("toggleTheme")}: ${current}`);
 }
 
 function loadTheme() {
@@ -385,7 +386,7 @@ async function ensureNote() {
     await putNote(note);
     state.id = note.id;
     setMeta(note);
-    setStatus("Gespeichert");
+    setStatus(t("saved"));
     history.replaceState(null, "", `./note.html?id=${encodeURIComponent(note.id)}`);
     return note.id;
   })();
@@ -402,7 +403,7 @@ let savePromise = /** @type {Promise<void> | null} */ (null);
 
 async function scheduleSave() {
   state.dirty = true;
-  setStatus("Änderungen…");
+  setStatus(t("saving"));
   await ensureNote();
   if (!state.id) return;
   if (saveTimer) window.clearTimeout(saveTimer);
@@ -440,7 +441,7 @@ async function saveNow(force = false) {
     await putNote(updated);
     state.dirty = false;
     setMeta(updated);
-    setStatus("Gespeichert");
+    setStatus(t("saved"));
     snapshotBackup("save").catch(() => {});
   })();
 
@@ -450,7 +451,7 @@ async function saveNow(force = false) {
     await run;
   } catch (e) {
     console.error(e);
-    setStatus("Fehler beim Speichern");
+    setStatus(t("saveFailed"));
   } finally {
     state.saving = false;
     savePromise = null;
@@ -461,12 +462,12 @@ async function onDelete() {
   if (!state.id) {
     els.titleInput.value = "";
     els.contentInput.innerHTML = "";
-    setStatus("Bereit");
+    setStatus(t("ready"));
     return;
   }
   const note = await getNote(state.id);
-  const label = note?.title?.trim() ? `„${note.title.trim()}“` : "diese Notiz";
-  const ok = await showConfirm(`Wirklich ${label} löschen?`, { title: "Löschen", danger: true, okText: "Löschen" });
+  const label = note?.title?.trim() ? `„${note.title.trim()}“` : t("thisNote");
+  const ok = await showConfirm(t("deleteConfirm", { label }), { title: t("deleteTitle"), danger: true, okText: t("delete") });
   if (!ok) return;
   await deleteNote(state.id);
   location.href = "./index.html";
@@ -474,18 +475,18 @@ async function onDelete() {
 
 async function confirmLeaveIfDirty() {
   if (!state.dirty) return true;
-  return await showConfirm("Ungespeicherte Änderungen verwerfen und zurück?", {
-    title: "Ungespeichert",
+  return await showConfirm(t("unsavedLeave"), {
+    title: t("unsavedTitle"),
     danger: true,
-    okText: "Verlassen",
-    cancelText: "Bleiben",
+    okText: t("leave"),
+    cancelText: t("stay"),
   });
 }
 
 function createNoteImage(src, altText, imageId) {
   const img = document.createElement("img");
   img.src = src;
-  img.alt = altText || "Bild";
+  img.alt = altText || t("image");
   img.className = "noteimg";
   img.loading = "lazy";
   img.decoding = "async";
@@ -534,10 +535,10 @@ async function insertAndroidImageUrl(imageId, src, altText) {
     return;
   }
   if (!src || typeof src !== "string" || !src.includes("/android-image/")) {
-    await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    await showAlert(t("imageInsertFailed"), { title: t("image") });
     return;
   }
-  insertImageElement(createNoteImage(src, altText || "Bild", id));
+  insertImageElement(createNoteImage(src, altText || t("image"), id));
   await scheduleSave();
   await saveNow(true);
   clearPendingAndroidImage();
@@ -552,7 +553,7 @@ async function handleImageFile(file) {
     (type && type.startsWith("image/")) ||
     /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(name);
   if (!isImage) {
-    await showAlert("Bitte eine Bilddatei auswählen.", { title: "Bild" });
+    await showAlert(t("chooseImageFile"), { title: t("image") });
     return;
   }
   // Keep simple: store as data URL (works offline, included in export).
@@ -602,7 +603,7 @@ async function readPendingAndroidImage(nameHint, lengthHint) {
   const bridgeName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : "";
   return {
     dataUrl: parts.join(""),
-    name: String(bridgeName || nameHint || "Bild"),
+    name: String(bridgeName || nameHint || t("image")),
   };
 }
 
@@ -618,7 +619,7 @@ async function receivePendingAndroidImage(imageId, nameHint, lengthHint, silent)
   const pendingLength =
     bridge && typeof bridge.getPendingImageLength === "function" ? Number(bridge.getPendingImageLength()) : 0;
   if (!pendingLength) {
-    if (!silent) await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+    if (!silent) await showAlert(t("imageReadFailed"), { title: t("image") });
     return false;
   }
 
@@ -627,16 +628,16 @@ async function receivePendingAndroidImage(imageId, nameHint, lengthHint, silent)
   try {
     const { dataUrl, name } = await readPendingAndroidImage(nameHint, lengthHint || pendingLength);
     if (!dataUrl.startsWith("data:image/")) {
-      if (!silent) await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+      if (!silent) await showAlert(t("imageReadFailed"), { title: t("image") });
       return false;
     }
-    insertImageDataUrl(dataUrl, name || "Bild");
+    insertImageDataUrl(dataUrl, name || t("image"));
     inserted = true;
     if (transferId) lastAndroidImageId = transferId;
     return true;
   } catch (e) {
     console.error(e);
-    if (!silent) await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    if (!silent) await showAlert(t("imageInsertFailed"), { title: t("image") });
     return false;
   } finally {
     if (inserted) clearPendingAndroidImage();
@@ -654,10 +655,10 @@ window.notizMaybeReceiveAndroidImage = async (imageId, nameHint, lengthHint) => 
 
 window.notizInsertImageUrlFromAndroid = async (imageId, src, name) => {
   try {
-    await insertAndroidImageUrl(imageId, src, name || "Bild");
+    await insertAndroidImageUrl(imageId, src, name || t("image"));
   } catch (e) {
     console.error(e);
-    await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    await showAlert(t("imageInsertFailed"), { title: t("image") });
   }
 };
 
@@ -670,7 +671,7 @@ function pollPendingAndroidImage(timeoutMs = 30000) {
     const webUrl = bridge && typeof bridge.getPendingImageWebUrl === "function" ? String(bridge.getPendingImageWebUrl() || "") : "";
     if (webUrl) {
       const imageId = typeof bridge.getPendingImageId === "function" ? bridge.getPendingImageId() : "";
-      const imageName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : "Bild";
+      const imageName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : t("image");
       await insertAndroidImageUrl(imageId, webUrl, imageName);
       return;
     }
@@ -678,7 +679,7 @@ function pollPendingAndroidImage(timeoutMs = 30000) {
       bridge && typeof bridge.getPendingImageLength === "function" ? Number(bridge.getPendingImageLength()) : 0;
     if (pendingLength > 0) {
       const imageId = typeof bridge.getPendingImageId === "function" ? bridge.getPendingImageId() : "";
-      const imageName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : "Bild";
+      const imageName = typeof bridge.getPendingImageName === "function" ? bridge.getPendingImageName() : t("image");
       const inserted = await receivePendingAndroidImage(imageId, imageName, pendingLength, true);
       if (inserted) return;
     }
@@ -690,13 +691,13 @@ function pollPendingAndroidImage(timeoutMs = 30000) {
 window.notizInsertImageFromAndroid = async (dataUrl, name) => {
   try {
     if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
-      await showAlert("Bild konnte nicht gelesen werden.", { title: "Bild" });
+      await showAlert(t("imageReadFailed"), { title: t("image") });
       return;
     }
-    insertImageDataUrl(dataUrl, name || "Bild");
+    insertImageDataUrl(dataUrl, name || t("image"));
   } catch (e) {
     console.error(e);
-    await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+    await showAlert(t("imageInsertFailed"), { title: t("image") });
   }
 };
 
@@ -747,7 +748,7 @@ async function openImageSizeDialog(img) {
 
   const heightInput = document.createElement("input");
   heightInput.className = "imgdlg__input";
-  heightInput.placeholder = "Höhe (leer = auto)";
+  heightInput.placeholder = t("heightAuto");
   heightInput.value = img.getAttribute("data-h") || img.style.height || "";
 
   row1.append(widthInput, heightInput);
@@ -761,7 +762,7 @@ async function openImageSizeDialog(img) {
   lock.type = "checkbox";
   lock.checked = (img.getAttribute("data-lock") || "1") === "1";
   const lockText = document.createElement("span");
-  lockText.textContent = "Seitenverhältnis halten";
+  lockText.textContent = t("keepRatio");
   lockLabel.append(lock, lockText);
 
   const quick = document.createElement("div");
@@ -784,13 +785,13 @@ async function openImageSizeDialog(img) {
   wrap.append(row1, row2);
 
   const result = await showDialog({
-    title: "Bildgröße",
+    title: t("imageSize"),
     body: wrap,
     focusSelector: ".imgdlg__input",
     buttons: [
-      { id: "cancel", label: "Abbrechen", className: "btn btn--ghost" },
-      { id: "remove", label: "Entfernen", danger: true },
-      { id: "apply", label: "Übernehmen" },
+      { id: "cancel", label: t("cancel"), className: "btn btn--ghost" },
+      { id: "remove", label: t("remove"), danger: true },
+      { id: "apply", label: t("apply") },
     ],
   });
 
@@ -806,7 +807,7 @@ async function openImageSizeDialog(img) {
   const w = normalizeSizeValue(widthInput.value);
   const h = normalizeSizeValue(heightInput.value);
   if (w === "__invalid__" || h === "__invalid__") {
-    await showAlert("Ungültige Größe. Erlaubt: Zahl, px oder % (z.B. 80% oder 320px).", { title: "Bildgröße" });
+    await showAlert(t("invalidSize"), { title: t("imageSize") });
     return;
   }
 
@@ -961,7 +962,7 @@ function bind() {
     } catch (e) {
       console.error(e);
       pollPendingAndroidImage(10000);
-      await showAlert("Bild konnte nicht eingefügt werden.", { title: "Bild" });
+      await showAlert(t("imageInsertFailed"), { title: t("image") });
     }
   });
 
@@ -974,7 +975,7 @@ function bind() {
       pollPendingAndroidImage();
     } catch (err) {
       console.error(err);
-      await showAlert("Bildauswahl konnte nicht geöffnet werden.", { title: "Bild" });
+      await showAlert(t("imagePickerFailed"), { title: t("image") });
     }
   });
 
@@ -1008,16 +1009,16 @@ async function loadNoteFromUrl() {
   const params = new URLSearchParams(location.search);
   const id = params.get("id");
   if (!id) {
-    els.subtitle.textContent = "Neue Notiz";
+    els.subtitle.textContent = t("newNoteStatus");
     els.deleteBtn.disabled = true;
-    setStatus("Tippe los zum Erstellen");
+    setStatus(t("tapToCreate"));
     return;
   }
   const note = await getNote(id);
   if (!note) {
     els.subtitle.textContent = "Nicht gefunden";
     els.deleteBtn.disabled = true;
-    setStatus("Notiz nicht gefunden");
+    setStatus(t("notFound"));
     return;
   }
   state.id = note.id;
@@ -1031,11 +1032,16 @@ async function loadNoteFromUrl() {
   normalizeChecklist(els.contentInput);
   ensureTrailingLine();
   setMeta(note);
-  setStatus("Bereit");
+  setStatus(t("ready"));
 }
 
 async function bootstrap() {
   loadTheme();
+  applyI18n();
+  initLanguageSwitcher(() => {
+    updateThemeButton();
+    applyI18n();
+  });
   ensureCssMode();
   bind();
   await loadNoteFromUrl();
@@ -1048,5 +1054,5 @@ async function bootstrap() {
 
 bootstrap().catch((e) => {
   console.error(e);
-  showAlert("Start fehlgeschlagen.", { title: "Fehler" });
+  showAlert(t("startFailed"), { title: t("error") });
 });

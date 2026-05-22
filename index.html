@@ -22,13 +22,20 @@
         <div class="brand">
           <div class="brand__dot" aria-hidden="true"></div>
           <div class="brand__text">
-            <div class="brand__name">Notiz</div>
-            <div class="brand__sub">minimal</div>
+            <div class="brand__name" data-i18n="appName">Notiz</div>
+            <div class="brand__sub" data-i18n="minimal">minimal</div>
           </div>
         </div>
 
         <div class="actions">
-          <button class="iconbtn" id="backupBtn" title="Backups" aria-label="Backups">
+          <label class="langswitch" title="Sprache">
+            <img id="langFlag" class="langswitch__flag" src="./flags/flagde.png" alt="Deutsch" />
+            <select id="langSelect" class="langswitch__select" aria-label="Sprache">
+              <option value="de">Deutsch</option>
+              <option value="tr">Türkçe</option>
+            </select>
+          </label>
+          <button class="iconbtn" id="backupBtn" title="Backups" aria-label="Backups" data-i18n-title="backup">
             <svg class="iconbtn__icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20 12a8 8 0 0 1-13.657 5.657" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M4 12a8 8 0 0 1 13.657-5.657" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -36,14 +43,14 @@
               <path d="M18 5v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
-          <button class="iconbtn" id="exportBtn" title="Export" aria-label="Export">
+          <button class="iconbtn" id="exportBtn" title="Export" aria-label="Export" data-i18n-title="export">
             <svg class="iconbtn__icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M8 11l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
-          <label class="iconbtn filebtn" for="importFile" title="Import" aria-label="Import">
+          <label class="iconbtn filebtn" for="importFile" title="Import" aria-label="Import" data-i18n-title="import">
             <svg class="iconbtn__icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 21V11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <path d="M8 13l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -51,19 +58,19 @@
             </svg>
           </label>
           <input id="importFile" class="filebtn__input" type="file" accept="application/json" />
-          <button class="iconbtn" id="newBtn" title="Neue Notiz" aria-label="Neue Notiz">
+          <button class="iconbtn" id="newBtn" title="Neue Notiz" aria-label="Neue Notiz" data-i18n-title="newNote">
             <span aria-hidden="true">＋</span>
           </button>
-          <button class="iconbtn" id="themeBtn" title="Theme umschalten" aria-label="Theme umschalten">
+          <button class="iconbtn" id="themeBtn" title="Theme umschalten" aria-label="Theme umschalten" data-i18n-title="toggleTheme">
             <span aria-hidden="true">◐</span>
           </button>
         </div>
       </header>
 
       <main class="shell shell--single" role="main">
-        <section class="pane pane--list pane--full" aria-label="Notizenliste">
+        <section class="pane pane--list pane--full" aria-label="Notizenliste" data-i18n-aria="notesList">
           <div class="search">
-            <input id="searchInput" class="search__input" type="search" placeholder="Suchen…" autocomplete="off" />
+            <input id="searchInput" class="search__input" type="search" placeholder="Suchen…" autocomplete="off" data-i18n-placeholder="search" />
             <div class="search__meta" id="searchMeta" aria-live="polite"></div>
           </div>
 

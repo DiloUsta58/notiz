@@ -1,6 +1,7 @@
 import { deleteNote, exportJson, getNote, importJson, listNotes, putNote } from "./db.js";
 import { listBackups, restoreBackup, snapshotBackup } from "./backup.js";
 import { showAlert, showConfirm, wireModalDismiss } from "./ui.js";
+import { applyI18n, getLang, initLanguageSwitcher, t } from "./i18n.js";
 
 const qs = (sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 
@@ -23,7 +24,7 @@ const state = {
 
 function formatTs(ts) {
   const d = new Date(ts);
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(d);
+  return new Intl.DateTimeFormat(getLang() === "tr" ? "tr-TR" : "de-DE", { dateStyle: "medium", timeStyle: "short" }).format(d);
 }
 
 function previewText(s) {
@@ -55,8 +56,8 @@ function isoWeekKey(ts) {
 function isoWeekLabel(key) {
   const nowKey = isoWeekKey(Date.now());
   const prevKey = isoWeekKey(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  if (key === nowKey) return "Diese Woche";
-  if (key === prevKey) return "Letzte Woche";
+  if (key === nowKey) return t("thisWeek");
+  if (key === prevKey) return t("lastWeek");
   const m = /^(\d{4})-W(\d{2})$/.exec(key);
   if (!m) return key;
   return `${m[1]} · KW ${m[2]}`;
@@ -75,7 +76,7 @@ function normalizeTags(tags) {
 
 function updateThemeButton() {
   const current = document.documentElement.getAttribute("data-theme") || "dark";
-  els.themeBtn.setAttribute("aria-label", `Theme: ${current}`);
+  els.themeBtn.setAttribute("aria-label", `${t("toggleTheme")}: ${current}`);
 }
 
 function loadTheme() {
@@ -110,7 +111,7 @@ function matchesQuery(note, q) {
 function applyFilter() {
   const q = els.searchInput.value.trim().toLowerCase();
   state.filtered = state.notes.filter((n) => matchesQuery(n, q));
-  els.searchMeta.textContent = q ? `${state.filtered.length} Treffer` : `${state.notes.length} Notizen`;
+  els.searchMeta.textContent = q ? `${state.filtered.length} ${t("hits")}` : `${state.notes.length} ${t("notes")}`;
 }
 
 function renderList() {
@@ -141,7 +142,7 @@ function renderList() {
 
       const title = document.createElement("div");
       title.className = "item__title";
-      title.textContent = n.title?.trim() ? n.title.trim() : "Ohne Titel";
+      title.textContent = n.title?.trim() ? n.title.trim() : t("untitled");
 
       const preview = document.createElement("div");
       preview.className = "item__preview";
@@ -267,8 +268,8 @@ function openMenu({ x, y, id }) {
   };
 
   m.append(
-    mk("Öffnen", async () => (location.href = `./note.html?id=${encodeURIComponent(id)}`)),
-    mk("Duplizieren", async () => {
+    mk(t("open"), async () => (location.href = `./note.html?id=${encodeURIComponent(id)}`)),
+    mk(t("duplicate"), async () => {
       const note = await getNote(id);
       if (!note) return;
       const now = Date.now();
@@ -277,15 +278,15 @@ function openMenu({ x, y, id }) {
         id: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,
-        title: note.title ? `${note.title} (Kopie)` : "Ohne Titel (Kopie)",
+        title: note.title ? `${note.title} ${t("copySuffix")}` : t("untitledCopy"),
       };
       await putNote(copy);
       await refreshNotes();
     }),
-    mk("Löschen", async () => {
+    mk(t("delete"), async () => {
       const note = await getNote(id);
-      const label = note?.title?.trim() ? `„${note.title.trim()}“` : "diese Notiz";
-      const ok = await showConfirm(`Wirklich ${label} löschen?`, { title: "Löschen", danger: true, okText: "Löschen" });
+      const label = note?.title?.trim() ? `„${note.title.trim()}“` : t("thisNote");
+      const ok = await showConfirm(t("deleteConfirm", { label }), { title: t("deleteTitle"), danger: true, okText: t("delete") });
       if (!ok) return;
       await deleteNote(id);
       await refreshNotes();
@@ -380,17 +381,17 @@ function openBackupMenu({ x, y }) {
   if (!backups.length) {
     const d = document.createElement("div");
     d.className = "menuhint";
-    d.textContent = "Keine Backups vorhanden.";
+    d.textContent = getLang() === "tr" ? "Yedek yok." : "Keine Backups vorhanden.";
     m.append(d);
   } else {
     m.append(
-      mk("Letztes Backup wiederherstellen", async () => {
+      mk(getLang() === "tr" ? "Son yedeği geri yükle" : "Letztes Backup wiederherstellen", async () => {
         const latest = backups[0];
         if (!latest) return;
-        const ok = await showConfirm("Letztes Backup wiederherstellen? (Vorhandene Notizen werden überschrieben)", {
-          title: "Restore",
+        const ok = await showConfirm(t("restoreLatest"), {
+          title: t("restore"),
           danger: true,
-          okText: "Wiederherstellen",
+          okText: t("restore"),
         });
         if (!ok) return;
         await restoreBackup(latest);
@@ -401,13 +402,13 @@ function openBackupMenu({ x, y }) {
     div.className = "menudiv";
     m.append(div);
     for (const b of backups.slice(0, 5)) {
-      const when = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(b.ts));
+      const when = formatTs(b.ts);
       m.append(
-        mk(`Restore · ${when}`, async () => {
-          const ok = await showConfirm(`Backup von ${when} wiederherstellen? (Überschreibt aktuelle Notizen)`, {
-            title: "Restore",
+        mk(`${t("restore")} · ${when}`, async () => {
+          const ok = await showConfirm(t("restoreBackup", { when }), {
+            title: t("restore"),
             danger: true,
-            okText: "Wiederherstellen",
+            okText: t("restore"),
           });
           if (!ok) return;
           await restoreBackup(b);
@@ -440,7 +441,7 @@ function bind() {
       await onImport(file);
     } catch (e) {
       console.error(e);
-      await showAlert("Import fehlgeschlagen (ungültige Datei).", { title: "Import" });
+      await showAlert(t("importFailed"), { title: t("import") });
     }
   });
 
@@ -469,9 +470,14 @@ function bind() {
 
 async function bootstrap() {
   loadTheme();
+  applyI18n();
+  initLanguageSwitcher(() => {
+    updateThemeButton();
+    renderList();
+  });
   bind();
   await refreshNotes();
-  els.searchMeta.textContent = `${state.notes.length} Notizen`;
+  els.searchMeta.textContent = `${state.notes.length} ${t("notes")}`;
 
   window.setInterval(() => snapshotBackup("interval").catch(() => {}), 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => {
@@ -481,5 +487,5 @@ async function bootstrap() {
 
 bootstrap().catch((e) => {
   console.error(e);
-  showAlert("Start fehlgeschlagen.", { title: "Fehler" });
+  showAlert(t("startFailed"), { title: t("error") });
 });

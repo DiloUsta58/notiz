@@ -20,76 +20,83 @@
     <div class="app" id="app">
       <header class="topbar" role="banner">
         <div class="brand">
-          <a class="back" href="./index.html" aria-label="Zurück zur Übersicht">←</a>
+          <a class="back" href="./index.html" aria-label="Zurück zur Übersicht" data-i18n-aria="backOverview">←</a>
           <div class="brand__text">
-            <div class="brand__name">Bearbeiten</div>
+            <div class="brand__name" data-i18n="edit">Bearbeiten</div>
             <div class="brand__sub" id="subtitle">…</div>
           </div>
         </div>
 
         <div class="actions">
-          <button class="iconbtn" id="themeBtn" title="Theme umschalten" aria-label="Theme umschalten">
+          <label class="langswitch" title="Sprache">
+            <img id="langFlag" class="langswitch__flag" src="./flags/flagde.png" alt="Deutsch" />
+            <select id="langSelect" class="langswitch__select" aria-label="Sprache">
+              <option value="de">Deutsch</option>
+              <option value="tr">Türkçe</option>
+            </select>
+          </label>
+          <button class="iconbtn" id="themeBtn" title="Theme umschalten" aria-label="Theme umschalten" data-i18n-title="toggleTheme">
             <span aria-hidden="true">◐</span>
           </button>
         </div>
       </header>
 
       <main class="shell shell--single" role="main">
-        <section class="pane pane--detail pane--full" aria-label="Notiz bearbeiten">
+        <section class="pane pane--detail pane--full" aria-label="Notiz bearbeiten" data-i18n-aria="editNote">
           <div class="detail" id="detail">
             <div class="detail__bar">
               <div class="status" id="statusText" aria-live="polite"></div>
               <div class="detail__barActions">
-                <button class="btn btn--danger" id="deleteBtn" type="button">Löschen</button>
+                <button class="btn btn--danger" id="deleteBtn" type="button" data-i18n="delete">Löschen</button>
               </div>
             </div>
 
             <div class="editor">
-              <input id="titleInput" class="editor__title" type="text" placeholder="Titel" autocomplete="off" />
+              <input id="titleInput" class="editor__title" type="text" placeholder="Titel" autocomplete="off" data-i18n-placeholder="title" />
               <div class="subbar" aria-label="Meta">
-                <label class="toollabel" title="Kategorie">
+                <label class="toollabel" title="Kategorie" data-i18n-title="category">
                   <span class="toollabel__text">Cat</span>
-                  <input id="categoryInput" class="tooltext" type="text" placeholder="Kategorie" aria-label="Kategorie" />
+                  <input id="categoryInput" class="tooltext" type="text" placeholder="Kategorie" aria-label="Kategorie" data-i18n-placeholder="category" data-i18n-aria="category" />
                 </label>
-                <label class="toollabel subbar__grow" title="Tags (Komma-getrennt)">
+                <label class="toollabel subbar__grow" title="Tags (Komma-getrennt)" data-i18n-title="tags">
                   <span class="toollabel__text">Tags</span>
-                  <input id="tagsInput" class="tooltext" type="text" placeholder="z.B. einkauf, arbeit" aria-label="Tags" />
+                  <input id="tagsInput" class="tooltext" type="text" placeholder="z.B. einkauf, arbeit" aria-label="Tags" data-i18n-placeholder="tagsPlaceholder" data-i18n-aria="tags" />
                 </label>
               </div>
-              <div class="toolbar" role="toolbar" aria-label="Textwerkzeuge">
-                <div class="toolbar__group" aria-label="Basis">
-                  <button class="toolbtn" type="button" data-cmd="bold" title="Fett"><span aria-hidden="true">B</span></button>
-                  <button class="toolbtn" type="button" data-cmd="italic" title="Kursiv"><span aria-hidden="true">I</span></button>
-                  <button class="toolbtn" type="button" data-cmd="underline" title="Unterstreichen"><span aria-hidden="true">U</span></button>
+              <div class="toolbar" role="toolbar" aria-label="Textwerkzeuge" data-i18n-aria="textTools">
+                <div class="toolbar__group" aria-label="Basis" data-i18n-aria="basic">
+                  <button class="toolbtn" type="button" data-cmd="bold" title="Fett" data-i18n-title="bold"><span aria-hidden="true">B</span></button>
+                  <button class="toolbtn" type="button" data-cmd="italic" title="Kursiv" data-i18n-title="italic"><span aria-hidden="true">I</span></button>
+                  <button class="toolbtn" type="button" data-cmd="underline" title="Unterstreichen" data-i18n-title="underline"><span aria-hidden="true">U</span></button>
                   <span class="toolsep" aria-hidden="true"></span>
-                  <button class="toolbtn" type="button" data-cmd="insertOrderedList" title="Nummerierung">1.</button>
-				  <button class="toolbtn" type="button" data-cmd="insertUnorderedList" title="Aufzählung">•</button>
-                  <button class="toolbtn" type="button" data-cmd="outdent" title="Ebene hoch">←</button>
-                  <button class="toolbtn" type="button" data-cmd="indent" title="Ebene runter">→</button>
-                  <button class="toolbtn" type="button" data-action="checklist" title="Checkliste">☑</button>
+                  <button class="toolbtn" type="button" data-cmd="insertOrderedList" title="Nummerierung" data-i18n-title="orderedList">1.</button>
+				  <button class="toolbtn" type="button" data-cmd="insertUnorderedList" title="Aufzählung" data-i18n-title="unorderedList">•</button>
+                  <button class="toolbtn" type="button" data-cmd="outdent" title="Ebene hoch" data-i18n-title="outdent">←</button>
+                  <button class="toolbtn" type="button" data-cmd="indent" title="Ebene runter" data-i18n-title="indent">→</button>
+                  <button class="toolbtn" type="button" data-action="checklist" title="Checkliste" data-i18n-title="checklist">☑</button>
                   <span class="toolsep" aria-hidden="true"></span>
-                  <button class="toolbtn" type="button" data-cmd="justifyLeft" title="Links">⟸</button>
-                  <button class="toolbtn" type="button" data-cmd="justifyCenter" title="Zentriert">≡</button>
-                  <button class="toolbtn" type="button" data-cmd="justifyRight" title="Rechts">⟹</button>
-                  <button class="toolbtn" type="button" data-cmd="justifyFull" title="Blocksatz">▦</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyLeft" title="Links" data-i18n-title="alignLeft">⟸</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyCenter" title="Zentriert" data-i18n-title="alignCenter">≡</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyRight" title="Rechts" data-i18n-title="alignRight">⟹</button>
+                  <button class="toolbtn" type="button" data-cmd="justifyFull" title="Blocksatz" data-i18n-title="justify">▦</button>
                   <span class="toolsep" aria-hidden="true"></span>
-                  <label class="toolbtn filebtn" id="imagePickerBtn" for="imageInput" title="Bild einfügen" aria-label="Bild einfügen">
+                  <label class="toolbtn filebtn" id="imagePickerBtn" for="imageInput" title="Bild einfügen" aria-label="Bild einfügen" data-i18n-title="insertImage">
                     <span aria-hidden="true">🖼</span>
                   </label>
                 </div>
 
-                <div class="toolbar__group toolbar__group--right" aria-label="Stil">
-                  <label class="toollabel" title="Format">
+                <div class="toolbar__group toolbar__group--right" aria-label="Stil" data-i18n-aria="style">
+                  <label class="toollabel" title="Format" data-i18n-title="format">
                     <span class="toollabel__text">Fmt</span>
                     <select class="toolselect" id="blockSelect" aria-label="Format">
-                      <option value="p">Normal</option>
-                      <option value="h1">Überschrift 1</option>
-                      <option value="h2">Überschrift 2</option>
-                      <option value="pre">Code</option>
+                      <option value="p" data-i18n="normal">Normal</option>
+                      <option value="h1" data-i18n="heading1">Überschrift 1</option>
+                      <option value="h2" data-i18n="heading2">Überschrift 2</option>
+                      <option value="pre" data-i18n="code">Code</option>
                     </select>
                   </label>
 
-                  <label class="toollabel" title="Textgröße">
+                  <label class="toollabel" title="Textgröße" data-i18n-title="size">
                     <span class="toollabel__text">Size</span>
                     <select class="toolselect" id="sizeSelect" aria-label="Textgröße">
                       <option value="12px">12</option>
@@ -100,10 +107,10 @@
                     </select>
                   </label>
 
-                  <label class="toollabel" title="Schriftart">
+                  <label class="toollabel" title="Schriftart" data-i18n-title="font">
                     <span class="toollabel__text">Font</span>
                     <select class="toolselect" id="fontSelect" aria-label="Schriftart">
-                      <option value="system-ui">System</option>
+                      <option value="system-ui" data-i18n="system">System</option>
                       <option value="Arial">Arial</option>
                       <option value="Georgia">Georgia</option>
                       <option value="Times New Roman">Times</option>
@@ -111,18 +118,18 @@
                     </select>
                   </label>
 
-                  <label class="toollabel" title="Schriftfarbe">
+                  <label class="toollabel" title="Schriftfarbe" data-i18n-title="textColor">
                     <span class="toollabel__text">Text</span>
                     <input id="textColor" class="toolcolor" type="color" value="#e7edf7" aria-label="Schriftfarbe" />
                   </label>
 
-                  <label class="toollabel" title="Texthervorhebung">
+                  <label class="toollabel" title="Texthervorhebung" data-i18n-title="highlight">
                     <span class="toollabel__text">Mark</span>
                     <input id="highlightColor" class="toolcolor" type="color" value="#fde68a" aria-label="Hervorhebungsfarbe" />
                   </label>
 
-                  <button class="toolbtn" type="button" data-action="normal" title="Normal (Format zurücksetzen)">N</button>
-                  <button class="toolbtn" type="button" data-cmd="removeFormat" title="Format entfernen">⨯</button>
+                  <button class="toolbtn" type="button" data-action="normal" title="Normal (Format zurücksetzen)" data-i18n-title="resetNormal">N</button>
+                  <button class="toolbtn" type="button" data-cmd="removeFormat" title="Format entfernen" data-i18n-title="removeFormat">⨯</button>
                 </div>
               </div>
 
@@ -134,6 +141,7 @@
                 role="textbox"
                 aria-multiline="true"
                 data-placeholder="Schreib los…"
+                data-i18n-data-placeholder="writePlaceholder"
                 spellcheck="true"
               ></div>
             </div>

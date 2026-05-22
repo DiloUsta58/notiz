@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+
 let modalEl = null;
 
 function ensureModal() {
@@ -10,7 +12,7 @@ function ensureModal() {
     <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal__head">
         <div class="modal__title" id="modalTitle"></div>
-        <button class="modal__x" type="button" aria-label="Schließen" data-modal-close="1">×</button>
+        <button class="modal__x" type="button" aria-label="Close" data-modal-close="1">×</button>
       </div>
       <div class="modal__body" id="modalBody"></div>
       <div class="modal__actions" id="modalActions"></div>
@@ -73,10 +75,10 @@ export function wireModalDismiss() {
 
 export function showAlert(message, opts = {}) {
   return new Promise((resolve) => {
-    const title = opts.title || "Hinweis";
+    const title = opts.title || (document.documentElement.lang === "tr" ? "Bilgi" : "Hinweis");
     const body = document.createElement("div");
     body.append(escapeHtml(message));
-    const ok = button(opts.okText || "OK", "btn", () => {
+    const ok = button(opts.okText || t("ok"), "btn", () => {
       closeModal();
       resolve();
     });
@@ -88,15 +90,15 @@ export function showAlert(message, opts = {}) {
 
 export function showConfirm(message, opts = {}) {
   return new Promise((resolve) => {
-    const title = opts.title || "Bestätigen";
+    const title = opts.title || (document.documentElement.lang === "tr" ? "Onayla" : "Bestätigen");
     const body = document.createElement("div");
     body.append(escapeHtml(message));
-    const cancel = button(opts.cancelText || "Abbrechen", "btn btn--ghost", () => {
+    const cancel = button(opts.cancelText || t("cancel"), "btn btn--ghost", () => {
       closeModal();
       resolve(false);
     });
     const okClass = opts.danger ? "btn btn--danger" : "btn";
-    const ok = button(opts.okText || "OK", okClass, () => {
+    const ok = button(opts.okText || t("ok"), okClass, () => {
       closeModal();
       resolve(true);
     });
@@ -110,10 +112,10 @@ export function showDialog(opts) {
   return new Promise((resolve) => {
     const title = opts?.title || "";
     const body = opts?.body instanceof Node ? opts.body : document.createElement("div");
-    const buttons = Array.isArray(opts?.buttons) ? opts.buttons : [{ id: "ok", label: "OK" }];
+    const buttons = Array.isArray(opts?.buttons) ? opts.buttons : [{ id: "ok", label: t("ok") }];
 
     const actionButtons = buttons.map((btn) =>
-      button(btn.label || "OK", btn.danger ? "btn btn--danger" : (btn.className || "btn"), () => {
+      button(btn.label || t("ok"), btn.danger ? "btn btn--danger" : (btn.className || "btn"), () => {
         closeModal();
         resolve(btn.id);
       })
